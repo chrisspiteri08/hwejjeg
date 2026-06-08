@@ -95,7 +95,7 @@ User's occasion/context: "${context}"
 Please suggest an outfit from the items above.`;
 
     const response = await client.chat.completions.create({
-      model: 'google/gemini-2.0-flash-exp:free',
+      model: 'meta-llama/llama-4-maverick:free',
       messages: [
         { role: 'system', content: STYLIST_SYSTEM_PROMPT },
         { role: 'user', content: userMessage },

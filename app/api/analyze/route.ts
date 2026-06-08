@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const mimeType = file.type || 'image/jpeg';
 
     const response = await client.chat.completions.create({
-      model: 'google/gemini-2.0-flash-exp:free',
+      model: 'meta-llama/llama-4-maverick:free',
       messages: [
         {
           role: 'user',
