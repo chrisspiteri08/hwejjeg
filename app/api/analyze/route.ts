@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase, WardrobeItemMetadata } from '@/lib/supabase';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');
-
 const ANALYSIS_PROMPT = `You are a fashion analysis AI. Analyze the clothing item in the image and return a JSON object with exactly these fields:
 - garment_type: string (e.g. "t-shirt", "jeans", "sneakers", "blazer", "dress", "coat", "skirt", "shorts", "sweater", "boots")
 - colour: string (primary colour name)
@@ -18,6 +16,12 @@ Return ONLY valid JSON. No markdown, no explanation, no code blocks.`;
 
 export async function POST(req: NextRequest) {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'GEMINI_API_KEY is not configured. Add it in Vercel Environment Variables.' }, { status: 500 });
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
+
     const formData = await req.formData();
     const file = formData.get('image') as File | null;
 

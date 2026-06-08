@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase, WardrobeItem } from '@/lib/supabase';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');
-
 const STYLIST_SYSTEM_PROMPT = `You are an expert personal fashion stylist. Your job is to select the perfect outfit from a user's wardrobe for their specific occasion and context.
 
 When given a list of wardrobe items (with their metadata) and the user's context, select items to form a complete outfit. Consider:
@@ -48,6 +46,12 @@ export interface OutfitSuggestion {
 
 export async function POST(req: NextRequest) {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'GEMINI_API_KEY is not configured. Add it in Vercel Environment Variables.' }, { status: 500 });
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
+
     const { context } = await req.json();
 
     if (!context || typeof context !== 'string') {
