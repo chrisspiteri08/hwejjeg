@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase, WardrobeItemMetadata } from '@/lib/supabase';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');
 
 const ANALYSIS_PROMPT = `You are a fashion analysis AI. Analyze the clothing item in the image and return a JSON object with exactly these fields:
 - garment_type: string (e.g. "t-shirt", "jeans", "sneakers", "blazer", "dress", "coat", "skirt", "shorts", "sweater", "boots")
@@ -32,31 +30,14 @@ export async function POST(req: NextRequest) {
     const base64 = buffer.toString('base64');
     const mimeType = (file.type || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mimeType,
-                data: base64,
-              },
-            },
-            {
-              type: 'text',
-              text: ANALYSIS_PROMPT,
-            },
-          ],
-        },
-      ],
-    });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+    const result = await model.generateContent([
+      ANALYSIS_PROMPT,
+      { inlineData: { data: base64, mimeType } },
+    ]);
+
+    const responseText = result.response.text();
     let metadata: WardrobeItemMetadata;
 
     try {

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase, WardrobeItem } from '@/lib/supabase';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');
 
 const STYLIST_SYSTEM_PROMPT = `You are an expert personal fashion stylist. Your job is to select the perfect outfit from a user's wardrobe for their specific occasion and context.
 
@@ -69,7 +67,7 @@ export async function POST(req: NextRequest) {
     if (!items || items.length === 0) {
       return NextResponse.json({
         suggestion: null,
-        message: "Your wardrobe is empty! Upload some clothing photos first to get outfit suggestions.",
+        message: 'Your wardrobe is empty! Upload some clothing photos first to get outfit suggestions.',
       });
     }
 
@@ -78,26 +76,19 @@ export async function POST(req: NextRequest) {
       metadata: item.metadata,
     }));
 
-    const userMessage = `User's wardrobe (${items.length} items):
+    const prompt = `${STYLIST_SYSTEM_PROMPT}
+
+User's wardrobe (${items.length} items):
 ${JSON.stringify(wardrobeForAI, null, 2)}
 
 User's occasion/context: "${context}"
 
 Please suggest an outfit from the items above.`;
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      system: STYLIST_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: userMessage,
-        },
-      ],
-    });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
 
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
     let suggestion: OutfitSuggestion;
 
     try {
@@ -114,7 +105,6 @@ Please suggest an outfit from the items above.`;
       return NextResponse.json({ suggestion: null, message: (suggestion as { error: string }).error });
     }
 
-    // Populate full item details into the response
     const itemMap = new Map(items.map((item: WardrobeItem) => [item.id, item]));
 
     const populateItem = (slot: OutfitItem | null) => {

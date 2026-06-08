@@ -8,7 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.102.0",
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.107.0",
     "@types/uuid": "^10.0.0",
     "next": "16.2.7",
