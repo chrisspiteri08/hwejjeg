@@ -95,7 +95,7 @@ User's occasion/context: "${context}"
 Please suggest an outfit from the items above.`;
 
     const response = await client.chat.completions.create({
-      model: 'qwen/qwen2.5-vl-72b-instruct:free',
+      model: process.env.OPENROUTER_TEXT_MODEL ?? 'nvidia/nemotron-ultra-253b-v1:free',
       messages: [
         { role: 'system', content: STYLIST_SYSTEM_PROMPT },
         { role: 'user', content: userMessage },
