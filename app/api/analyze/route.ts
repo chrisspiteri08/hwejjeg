@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 import { supabase, WardrobeItemMetadata } from '@/lib/supabase';
 
 const ANALYSIS_PROMPT = `You are a fashion analysis AI. Analyze the clothing item in the image and return a JSON object with exactly these fields:
@@ -16,18 +16,15 @@ Return ONLY valid JSON. No markdown, no explanation, no code blocks.`;
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'OPENROUTER_API_KEY is not configured. Add it in Vercel Environment Variables.' },
+        { error: 'GROQ_API_KEY is not configured. Add it in Vercel Environment Variables.' },
         { status: 500 }
       );
     }
 
-    const client = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey,
-    });
+    const groq = new Groq({ apiKey });
 
     const formData = await req.formData();
     const file = formData.get('image') as File | null;
@@ -41,8 +38,8 @@ export async function POST(req: NextRequest) {
     const base64 = buffer.toString('base64');
     const mimeType = file.type || 'image/jpeg';
 
-    const response = await client.chat.completions.create({
-      model: process.env.OPENROUTER_VISION_MODEL ?? 'mistralai/mistral-small-3.1-24b-instruct:free',
+    const response = await groq.chat.completions.create({
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       messages: [
         {
           role: 'user',

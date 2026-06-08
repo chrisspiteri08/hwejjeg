@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 import { supabase, WardrobeItem } from '@/lib/supabase';
 
 const STYLIST_SYSTEM_PROMPT = `You are an expert personal fashion stylist. Your job is to select the perfect outfit from a user's wardrobe for their specific occasion and context.
@@ -46,18 +46,15 @@ export interface OutfitSuggestion {
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'OPENROUTER_API_KEY is not configured. Add it in Vercel Environment Variables.' },
+        { error: 'GROQ_API_KEY is not configured. Add it in Vercel Environment Variables.' },
         { status: 500 }
       );
     }
 
-    const client = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey,
-    });
+    const groq = new Groq({ apiKey });
 
     const { context } = await req.json();
 
@@ -94,8 +91,8 @@ User's occasion/context: "${context}"
 
 Please suggest an outfit from the items above.`;
 
-    const response = await client.chat.completions.create({
-      model: process.env.OPENROUTER_TEXT_MODEL ?? 'nvidia/nemotron-ultra-253b-v1:free',
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: STYLIST_SYSTEM_PROMPT },
         { role: 'user', content: userMessage },
