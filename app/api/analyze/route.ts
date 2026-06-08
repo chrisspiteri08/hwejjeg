@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { supabase, WardrobeItemMetadata } from '@/lib/supabase';
 
 const ANALYSIS_PROMPT = `You are a fashion analysis AI. Analyze the clothing item in the image and return a JSON object with exactly these fields:
@@ -16,11 +16,18 @@ Return ONLY valid JSON. No markdown, no explanation, no code blocks.`;
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY is not configured. Add it in Vercel Environment Variables.' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'OPENROUTER_API_KEY is not configured. Add it in Vercel Environment Variables.' },
+        { status: 500 }
+      );
     }
-    const genAI = new GoogleGenerativeAI(apiKey);
+
+    const client = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey,
+    });
 
     const formData = await req.formData();
     const file = formData.get('image') as File | null;
@@ -32,16 +39,25 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const base64 = buffer.toString('base64');
-    const mimeType = (file.type || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+    const mimeType = file.type || 'image/jpeg';
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const response = await client.chat.completions.create({
+      model: 'google/gemini-2.0-flash-exp:free',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mimeType};base64,${base64}` },
+            },
+            { type: 'text', text: ANALYSIS_PROMPT },
+          ],
+        },
+      ],
+    });
 
-    const result = await model.generateContent([
-      ANALYSIS_PROMPT,
-      { inlineData: { data: base64, mimeType } },
-    ]);
-
-    const responseText = result.response.text();
+    const responseText = response.choices[0]?.message?.content ?? '';
     let metadata: WardrobeItemMetadata;
 
     try {

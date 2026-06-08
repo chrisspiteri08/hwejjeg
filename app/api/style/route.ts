@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { supabase, WardrobeItem } from '@/lib/supabase';
 
 const STYLIST_SYSTEM_PROMPT = `You are an expert personal fashion stylist. Your job is to select the perfect outfit from a user's wardrobe for their specific occasion and context.
@@ -46,11 +46,18 @@ export interface OutfitSuggestion {
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY is not configured. Add it in Vercel Environment Variables.' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'OPENROUTER_API_KEY is not configured. Add it in Vercel Environment Variables.' },
+        { status: 500 }
+      );
     }
-    const genAI = new GoogleGenerativeAI(apiKey);
+
+    const client = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey,
+    });
 
     const { context } = await req.json();
 
@@ -80,19 +87,22 @@ export async function POST(req: NextRequest) {
       metadata: item.metadata,
     }));
 
-    const prompt = `${STYLIST_SYSTEM_PROMPT}
-
-User's wardrobe (${items.length} items):
+    const userMessage = `User's wardrobe (${items.length} items):
 ${JSON.stringify(wardrobeForAI, null, 2)}
 
 User's occasion/context: "${context}"
 
 Please suggest an outfit from the items above.`;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    const response = await client.chat.completions.create({
+      model: 'google/gemini-2.0-flash-exp:free',
+      messages: [
+        { role: 'system', content: STYLIST_SYSTEM_PROMPT },
+        { role: 'user', content: userMessage },
+      ],
+    });
 
+    const responseText = response.choices[0]?.message?.content ?? '';
     let suggestion: OutfitSuggestion;
 
     try {
