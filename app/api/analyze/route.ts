@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const mimeType = file.type || 'image/jpeg';
 
     const response = await client.chat.completions.create({
-      model: 'meta-llama/llama-4-maverick:free',
+      model: 'qwen/qwen2.5-vl-72b-instruct:free',
       messages: [
         {
           role: 'user',
