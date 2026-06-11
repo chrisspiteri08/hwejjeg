@@ -135,7 +135,7 @@ export default function WardrobeGrid({ items, loading }: WardrobeGridProps) {
           <button
             key={item.id}
             onClick={() => setSelected(item)}
-            className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 text-left active:scale-95 transition-transform"
+            className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 text-left active:scale-95 transition-transform cursor-pointer hover:shadow-md hover:border-indigo-200"
           >
             {item.image_base64 ? (
               <img
