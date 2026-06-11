@@ -34,6 +34,10 @@ export default function Home() {
     setActiveTab('wardrobe');
   };
 
+  const handleItemDeleted = (id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     {
       id: 'wardrobe',
@@ -95,7 +99,7 @@ export default function Home() {
                 Add item
               </button>
             </div>
-            <WardrobeGrid items={items} loading={loadingItems} />
+            <WardrobeGrid items={items} loading={loadingItems} onDelete={handleItemDeleted} />
           </>
         )}
 
