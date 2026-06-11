@@ -168,3 +168,4 @@ export default function WardrobeGrid({ items, loading }: WardrobeGridProps) {
     </>
   );
 }
+
